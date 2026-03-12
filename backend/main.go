@@ -2,6 +2,7 @@ package main
 
 import (
 	"backend/pkg/api"
+	"backend/pkg/cache"
 	"fmt"
 	"strings"
 	"time"
@@ -18,11 +19,7 @@ func main() {
 	router := gin.Default()
 	exchangeApi := api.NewExchangeApiClient()
 
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
+	router.Use(cache.Middleware(10 * time.Minute))
 
 	router.GET("/latest", func(c *gin.Context) {
 		base := c.Query("base")
@@ -47,7 +44,7 @@ func main() {
 		c.JSON(200, gin.H{"data": strongestExchange})
 	})
 
-	router.GET("/weakest", func(c *gin.Context) {
+	router.GET("/weakest", cache.Middleware(1*time.Hour), func(c *gin.Context) {
 		base := c.Query("base")
 
 		if base == "" {
