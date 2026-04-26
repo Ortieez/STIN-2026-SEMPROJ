@@ -13,11 +13,10 @@ import (
 type name interface {
 }
 
-func setupRouter() *gin.Engine {
+func setupRouter(exchangeApi api.ExchangeApi) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	exchangeApi := api.NewExchangeApiClient()
 
 	router.Use(cache.Middleware(10 * time.Minute))
 
@@ -116,6 +115,7 @@ func setupRouter() *gin.Engine {
 }
 
 func main() {
-	router := setupRouter()
+	exchangeApi := api.NewExchangeApiClient()
+	router := setupRouter(exchangeApi)
 	router.Run("0.0.0.0:3000")
 }
