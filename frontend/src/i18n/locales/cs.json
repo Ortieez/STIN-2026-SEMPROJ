@@ -15,6 +15,7 @@
     "settings": "Nastavení",
     "logout": "Odhlásit se",
     "fetching": "Načítání trhů...",
+    "error_connection": "Nepodařilo se připojit k měnovému serveru. Zkuste to prosím později.",
     "strongest": "Nejsilnější měna",
     "weakest": "Nejslabší měna",
     "relative_to": "Vzhledem k",

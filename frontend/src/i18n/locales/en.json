@@ -15,6 +15,7 @@
     "settings": "Settings",
     "logout": "Logout",
     "fetching": "Fetching latest markets...",
+    "error_connection": "Could not connect to the currency server. Please try again later.",
     "strongest": "Strongest Currency",
     "weakest": "Weakest Currency",
     "relative_to": "Relative to",

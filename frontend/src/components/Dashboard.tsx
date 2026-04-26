@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2 } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -27,6 +27,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [avgLoading, setAvgLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (view === 'dashboard') {
@@ -36,6 +37,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
   const fetchDashboardData = async () => {
     setLoading(true);
+    setError(false);
     try {
       const headers = { 
         Authorization: token,
@@ -47,11 +49,16 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         fetch('http://localhost:3000/weakest', { headers })
       ]);
 
-      if (latestRes.ok) setLatestData(await latestRes.json());
-      if (strongRes.ok) setStrongest(await strongRes.json());
-      if (weakRes.ok) setWeakest(await weakRes.json());
+      if (!latestRes.ok || !strongRes.ok || !weakRes.ok) {
+        throw new Error('Failed to fetch');
+      }
+
+      setLatestData(await latestRes.json());
+      setStrongest(await strongRes.json());
+      setWeakest(await weakRes.json());
     } catch (err) {
       console.error('Error fetching dashboard data', err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -90,8 +97,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         <div className="flex flex-wrap items-center gap-3">
           <LanguageSwitcher />
           <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block"></div>
-          <Button variant="outline" size="sm" onClick={fetchDashboardData}>
-            <RefreshCcw className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={fetchDashboardData} disabled={loading}>
+            <RefreshCcw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {t('dashboard.refresh')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setView('settings')}>
@@ -109,6 +116,22 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-lg font-medium animate-pulse">{t('dashboard.fetching')}</p>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6 text-center animate-in zoom-in-95 duration-300">
+          <div className="bg-destructive/10 p-6 rounded-full">
+            <AlertCircle className="h-16 w-12 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-bold tracking-tight">{t('dashboard.error_connection')}</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+              Please check your network or ensure the backend server is running on port 3000.
+            </p>
+          </div>
+          <Button size="lg" onClick={fetchDashboardData}>
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            {t('dashboard.refresh')}
+          </Button>
         </div>
       ) : (
         <div className="space-y-8">
