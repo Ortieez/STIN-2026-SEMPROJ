@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -15,15 +16,33 @@ func hashString(s string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func Middleware() gin.HandlerFunc {
+// getAuthCredentials retrieves values from .env with minimal hardcoded fallbacks
+func getAuthCredentials() (string, string, string) {
 	_ = godotenv.Load()
-	expectedToken := os.Getenv("AUTH_TOKEN")
-	if expectedToken == "" {
-		// Default token for dev is hash of admin:password123
-		expectedToken = hashString("admin:password123")
+	user := os.Getenv("LOGIN_USERNAME")
+	pass := os.Getenv("LOGIN_PASSWORD")
+	token := os.Getenv("AUTH_TOKEN")
+
+	// If token is missing, generate it dynamically from current user/pass
+	if token == "" {
+		u := user
+		if u == "" {
+			u = "admin"
+		}
+		p := pass
+		if p == "" {
+			p = "password123"
+		}
+		token = hashString(fmt.Sprintf("%s:%s", u, p))
 	}
 
+	return user, pass, token
+}
+
+func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		_, _, expectedToken := getAuthCredentials()
+		
 		token := c.GetHeader("Authorization")
 		if token != expectedToken {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -35,27 +54,19 @@ func Middleware() gin.HandlerFunc {
 }
 
 type LoginRequest struct {
-	Username string `json:"username"` // Expected to be SHA256 hash from client
-	Password string `json:"password"` // Expected to be SHA256 hash from client
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func LoginHandler(c *gin.Context) {
-	_ = godotenv.Load()
-	
-	// Plain text credentials from .env
-	plainUsername := os.Getenv("LOGIN_USERNAME")
-	plainPassword := os.Getenv("LOGIN_PASSWORD")
-	token := os.Getenv("AUTH_TOKEN")
+	envUser, envPass, expectedToken := getAuthCredentials()
 
-	// Defaults for development
-	if plainUsername == "" {
-		plainUsername = "admin"
+	// Use defaults if .env is completely empty
+	if envUser == "" {
+		envUser = "admin"
 	}
-	if plainPassword == "" {
-		plainPassword = "password123"
-	}
-	if token == "" {
-		token = hashString("admin:password123")
+	if envPass == "" {
+		envPass = "password123"
 	}
 
 	var req LoginRequest
@@ -64,13 +75,11 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	// Server-side hashing of plain credentials from .env
-	expectedUserHash := hashString(plainUsername)
-	expectedPassHash := hashString(plainPassword)
+	expectedUserHash := hashString(envUser)
+	expectedPassHash := hashString(envPass)
 
-	// Compare incoming hashes with locally generated hashes
 	if req.Username == expectedUserHash && req.Password == expectedPassHash {
-		c.JSON(http.StatusOK, gin.H{"token": token})
+		c.JSON(http.StatusOK, gin.H{"token": expectedToken})
 	} else {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 	}
