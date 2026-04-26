@@ -36,6 +36,7 @@
       "from": "Datum od",
       "to": "Datum do",
       "calculate": "Vypočítat",
+      "no_currencies_tooltip": "Pro použití kalkulačky přidejte sledované měny v Nastavení",
       "results_for": "Výsledky pro"
     }
   },

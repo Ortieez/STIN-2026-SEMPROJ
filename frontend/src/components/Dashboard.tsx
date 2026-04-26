@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -87,6 +88,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
     return <Settings token={token} onBack={() => setView('dashboard')} />;
   }
 
+  const hasCurrencies = latestData?.data && Object.keys(latestData.data.rates).length > 0;
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b pb-6">
@@ -135,44 +138,62 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
       ) : (
         <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-l-4 border-l-green-500 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('dashboard.strongest')}</CardTitle>
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              </CardHeader>
-              <CardContent>
-                {strongest?.data && Object.entries(strongest.data.rates).map(([k, v]: any) => (
-                  <div key={k} className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{k}</span>
-                    <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {strongest?.data?.base}</p>
-              </CardContent>
-            </Card>
+          {hasCurrencies && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-4 duration-500">
+              <Card className="border-l-4 border-l-green-500 shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t('dashboard.strongest')}</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                </CardHeader>
+                <CardContent>
+                  {strongest?.data && Object.entries(strongest.data.rates).map(([k, v]: any) => (
+                    <div key={k} className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold">{k}</span>
+                      <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {strongest?.data?.base}</p>
+                </CardContent>
+              </Card>
 
-            <Card className="border-l-4 border-l-red-500 shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{t('dashboard.weakest')}</CardTitle>
-                <TrendingDown className="h-4 w-4 text-red-500" />
-              </CardHeader>
-              <CardContent>
-                {weakest?.data && Object.entries(weakest.data.rates).map(([k, v]: any) => (
-                  <div key={k} className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{k}</span>
-                    <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
-                  </div>
-                ))}
-                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {weakest?.data?.base}</p>
-              </CardContent>
-            </Card>
-          </div>
+              <Card className="border-l-4 border-l-red-500 shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{t('dashboard.weakest')}</CardTitle>
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                </CardHeader>
+                <CardContent>
+                  {weakest?.data && Object.entries(weakest.data.rates).map(([k, v]: any) => (
+                    <div key={k} className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold">{k}</span>
+                      <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {weakest?.data?.base}</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <Tabs defaultValue="rates" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
               <TabsTrigger value="rates">{t('dashboard.tabs.rates')}</TabsTrigger>
-              <TabsTrigger value="average">{t('dashboard.tabs.average')}</TabsTrigger>
+              
+              {!hasCurrencies ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full h-full">
+                      <TabsTrigger value="average" disabled className="w-full opacity-50 cursor-not-allowed">
+                        {t('dashboard.tabs.average')}
+                      </TabsTrigger>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>{t('dashboard.avg_calc.no_currencies_tooltip')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <TabsTrigger value="average">{t('dashboard.tabs.average')}</TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="rates" className="mt-0">
