@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle, Lock } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -56,7 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
       setLatestData(await latestRes.json());
       setStrongest(await strongRes.json());
-      setWeakest(await weakRes.json());
+      setWeakest(await weakestRes.json());
     } catch (err) {
       console.error('Error fetching dashboard data', err);
       setError(true);
@@ -175,20 +175,21 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
           )}
 
           <Tabs defaultValue="rates" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
+            <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4 relative">
               <TabsTrigger value="rates">{t('dashboard.tabs.rates')}</TabsTrigger>
               
               {!hasCurrencies ? (
-                <Tooltip>
+                <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
-                    <div className="w-full h-full">
+                    <div className="flex items-center justify-center">
                       <TabsTrigger value="average" disabled className="w-full opacity-50 cursor-not-allowed">
+                        <Lock className="h-3 w-3 mr-2" />
                         {t('dashboard.tabs.average')}
                       </TabsTrigger>
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>{t('dashboard.avg_calc.no_currencies_tooltip')}</p>
+                  <TooltipContent side="top" className="bg-destructive text-destructive-foreground">
+                    <p className="font-semibold">{t('dashboard.avg_calc.no_currencies_tooltip')}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
@@ -221,8 +222,14 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={2} className="text-center py-8 text-muted-foreground italic">
-                              {t('dashboard.latest.empty')}
+                            <TableCell colSpan={2} className="text-center py-12 text-muted-foreground">
+                              <div className="flex flex-col items-center space-y-2">
+                                <AlertCircle className="h-8 w-8 text-muted-foreground/50" />
+                                <p className="italic text-lg">{t('dashboard.latest.empty')}</p>
+                                <Button variant="link" onClick={() => setView('settings')} className="text-primary font-bold uppercase tracking-wider">
+                                  {t('dashboard.settings')}
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         )}
