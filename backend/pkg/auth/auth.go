@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"backend/pkg/i18n"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -34,10 +35,8 @@ func Middleware() gin.HandlerFunc {
 		_, _, expectedToken := getAuthCredentials()
 
 		token := c.GetHeader("Authorization")
-		fmt.Println(token)
-		fmt.Println(expectedToken)
 		if token != expectedToken {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": i18n.T(c, "unauthorized")})
 			c.Abort()
 			return
 		}
@@ -55,7 +54,7 @@ func LoginHandler(c *gin.Context) {
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": i18n.T(c, "invalid_request")})
 		return
 	}
 
@@ -65,6 +64,6 @@ func LoginHandler(c *gin.Context) {
 	if req.Username == expectedUserHash && req.Password == expectedPassHash {
 		c.JSON(http.StatusOK, gin.H{"token": expectedToken})
 	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": i18n.T(c, "invalid_credentials")})
 	}
 }
