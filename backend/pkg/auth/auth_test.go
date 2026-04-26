@@ -12,27 +12,31 @@ import (
 )
 
 func TestLoginHandler(t *testing.T) {
-	os.Setenv("LOGIN_USERNAME", "testuser")
-	os.Setenv("LOGIN_PASSWORD", "testpass")
+	// Plain credentials in .env
+	os.Setenv("LOGIN_USERNAME", "admin")
+	os.Setenv("LOGIN_PASSWORD", "password123")
 	os.Setenv("AUTH_TOKEN", "testtoken")
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 	router.POST("/login", LoginHandler)
 
-	// Valid login
+	// Valid login: client sends hashes
 	w := httptest.NewRecorder()
-	body, _ := json.Marshal(LoginRequest{Username: "testuser", Password: "testpass"})
+	hashedUser := hashString("admin")
+	hashedPass := hashString("password123")
+	
+	body, _ := json.Marshal(LoginRequest{Username: hashedUser, Password: hashedPass})
 	req, _ := http.NewRequest("POST", "/login", bytes.NewBuffer(body))
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("Expected 200, got %d", w.Code)
+		t.Errorf("Expected 200, got %d. Body: %s", w.Code, w.Body.String())
 	}
 
-	// Invalid login
+	// Invalid login: wrong hashes
 	w = httptest.NewRecorder()
-	body, _ = json.Marshal(LoginRequest{Username: "wrong", Password: "wrong"})
+	body, _ = json.Marshal(LoginRequest{Username: "wronghash", Password: "wronghash"})
 	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer(body))
 	router.ServeHTTP(w, req)
 

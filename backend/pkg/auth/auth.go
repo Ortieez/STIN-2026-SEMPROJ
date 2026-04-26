@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"os"
 
@@ -8,11 +10,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func hashString(s string) string {
+	hash := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(hash[:])
+}
+
 func Middleware() gin.HandlerFunc {
 	_ = godotenv.Load()
 	expectedToken := os.Getenv("AUTH_TOKEN")
 	if expectedToken == "" {
-		expectedToken = "secret-token"
+		// Default token for dev is hash of admin:password123
+		expectedToken = hashString("admin:password123")
 	}
 
 	return func(c *gin.Context) {
@@ -27,24 +35,27 @@ func Middleware() gin.HandlerFunc {
 }
 
 type LoginRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username string `json:"username"` // Expected to be SHA256 hash from client
+	Password string `json:"password"` // Expected to be SHA256 hash from client
 }
 
 func LoginHandler(c *gin.Context) {
 	_ = godotenv.Load()
-	expectedUsername := os.Getenv("LOGIN_USERNAME")
-	expectedPassword := os.Getenv("LOGIN_PASSWORD")
+	
+	// Plain text credentials from .env
+	plainUsername := os.Getenv("LOGIN_USERNAME")
+	plainPassword := os.Getenv("LOGIN_PASSWORD")
 	token := os.Getenv("AUTH_TOKEN")
 
-	if expectedUsername == "" {
-		expectedUsername = "admin"
+	// Defaults for development
+	if plainUsername == "" {
+		plainUsername = "admin"
 	}
-	if expectedPassword == "" {
-		expectedPassword = "password123"
+	if plainPassword == "" {
+		plainPassword = "password123"
 	}
 	if token == "" {
-		token = "secret-token"
+		token = hashString("admin:password123")
 	}
 
 	var req LoginRequest
@@ -53,7 +64,12 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	if req.Username == expectedUsername && req.Password == expectedPassword {
+	// Server-side hashing of plain credentials from .env
+	expectedUserHash := hashString(plainUsername)
+	expectedPassHash := hashString(plainPassword)
+
+	// Compare incoming hashes with locally generated hashes
+	if req.Username == expectedUserHash && req.Password == expectedPassHash {
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	} else {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
