@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -20,14 +19,13 @@ type CacheEntry struct {
 type FullCache map[string]CacheEntry
 
 func getCacheFilename() string {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	cacheFileName := os.Getenv("CACHE_FILE_PATH")
+	if cacheFileName != "" {
+		return cacheFileName
 	}
 
-	cacheFileName := os.Getenv("CACHE_FILE_PATH")
-
-	return cacheFileName
+	_ = godotenv.Load()
+	return os.Getenv("CACHE_FILE_PATH")
 }
 
 func GetCachedRoute(route string) []byte {
@@ -87,7 +85,7 @@ type responseBodyWriter struct {
 	body *bytes.Buffer
 }
 
-func (w responseBodyWriter) Write(b []byte) (int, error) {
+func (w *responseBodyWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }

@@ -13,11 +13,10 @@ import (
 type name interface {
 }
 
-func main() {
+func setupRouter(exchangeApi api.ExchangeApi) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
-	exchangeApi := api.NewExchangeApiClient()
 
 	router.Use(cache.Middleware(10 * time.Minute))
 
@@ -64,10 +63,11 @@ func main() {
 
 		selectedCurrenciesArr := strings.Split(selectedCurrencies, ",")
 
-		if selectedCurrenciesArr == nil || len(selectedCurrenciesArr) == 0 {
+		if selectedCurrencies == "" {
 			c.JSON(400, gin.H{
 				"error": "no selected currencies",
 			})
+			return
 		}
 
 		_, errFrom := time.Parse("2006-01-02", from)
@@ -77,6 +77,7 @@ func main() {
 			c.JSON(400, gin.H{
 				"error": "date format error",
 			})
+			return
 		}
 
 		if base == "" {
@@ -103,12 +104,18 @@ func main() {
 
 		res := &api.ExchangeApiBaseResponse{
 			Base:  base,
-			Date:  fmt.Sprintf("%s..%s", from, to), // Or a specific date/format
+			Date:  fmt.Sprintf("%s..%s", from, to),
 			Rates: averageCurrencies,
 		}
 
 		c.JSON(200, gin.H{"data": res})
 	})
 
-	router.Run("0.0.0.0:3000") // listens on 0.0.0.0:8080 by default
+	return router
+}
+
+func main() {
+	exchangeApi := api.NewExchangeApiClient()
+	router := setupRouter(exchangeApi)
+	router.Run("0.0.0.0:3000")
 }

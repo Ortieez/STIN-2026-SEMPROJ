@@ -1,11 +1,9 @@
 package api
 
 import (
-	_ "bufio"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 
@@ -145,10 +143,7 @@ func (e ExchangeApiClient) GetAverageExchangeRateForCurrencies(baseCurrency stri
 }
 
 func NewExchangeApiClient() ExchangeApi {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	_ = godotenv.Load()
 
 	baseUrl := os.Getenv("BASE_API_URL")
 	latestEndpoint := os.Getenv("API_URL_LATEST")
