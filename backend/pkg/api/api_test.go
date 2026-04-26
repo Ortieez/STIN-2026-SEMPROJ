@@ -142,7 +142,7 @@ func TestNewExchangeApiClient(t *testing.T) {
 	os.Setenv("API_URL_LATEST", "/latest")
 	os.Setenv("API_URL_CURRENCIES", "/curr")
 
-	client := NewExchangeApiClient()
+	client := NewExchangeApiClient(nil)
 	c, ok := client.(*ExchangeApiClient)
 	if !ok {
 		t.Fatal("Expected *ExchangeApiClient type")
