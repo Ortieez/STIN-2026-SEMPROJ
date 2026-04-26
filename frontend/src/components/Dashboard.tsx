@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Settings from './Settings';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,52 +28,65 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [avgLoading, setAvgLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const headers: HeadersInit = { 
+        'Authorization': token,
+        'Accept-Language': language
+      };
+
+      const fetchWithAuth = async (url: string) => {
+        const res = await fetch(url, { headers });
+        if (res.status === 401) {
+          onLogout();
+          throw new Error('Unauthorized');
+        }
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json();
+      };
+
+      const [latest, strong, weak] = await Promise.all([
+        fetchWithAuth('http://localhost:3000/latest'),
+        fetchWithAuth('http://localhost:3000/strongest'),
+        fetchWithAuth('http://localhost:3000/weakest')
+      ]);
+
+      setLatestData(latest);
+      setStrongest(strong);
+      setWeakest(weak);
+    } catch (err: any) {
+      if (err.message !== 'Unauthorized') {
+        console.error('Error fetching dashboard data', err);
+        setError(t('dashboard.error_connection'));
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [token, language, onLogout, t]);
 
   useEffect(() => {
     if (view === 'dashboard') {
       fetchDashboardData();
     }
-  }, [view]);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const headers = { 
-        Authorization: token,
-        'Accept-Language': language
-      };
-      const [latestRes, strongRes, weakRes] = await Promise.all([
-        fetch('http://localhost:3000/latest', { headers }),
-        fetch('http://localhost:3000/strongest', { headers }),
-        fetch('http://localhost:3000/weakest', { headers })
-      ]);
-
-      if (!latestRes.ok || !strongRes.ok || !weakRes.ok) {
-        throw new Error('Failed to fetch');
-      }
-
-      setLatestData(await latestRes.json());
-      setStrongest(await strongRes.json());
-      setWeakest(await weakestRes.json());
-    } catch (err) {
-      console.error('Error fetching dashboard data', err);
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [view, fetchDashboardData]);
 
   const fetchAverage = async () => {
     setAvgLoading(true);
     try {
       const response = await fetch(`http://localhost:3000/average?from=${fromDate}&to=${toDate}`, {
         headers: { 
-          Authorization: token,
+          'Authorization': token,
           'Accept-Language': language
         }
       });
+      if (response.status === 401) {
+        onLogout();
+        return;
+      }
       if (response.ok) {
         setAverageData(await response.json());
       }
@@ -115,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         </div>
       </header>
 
-      {loading ? (
+      {loading && !latestData ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-lg font-medium animate-pulse">{t('dashboard.fetching')}</p>
@@ -126,7 +139,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             <AlertCircle className="h-16 w-12 text-destructive" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold tracking-tight">{t('dashboard.error_connection')}</h3>
+            <h3 className="text-2xl font-bold tracking-tight">{error}</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
               Please check your network or ensure the backend server is running on port 3000.
             </p>
