@@ -19,7 +19,7 @@ func setupRouter() *gin.Engine {
 	router := gin.Default()
 	exchangeApi := api.NewExchangeApiClient()
 
-	router.Use(cache.Middleware(10 * time.Minute))
+	// router.Use(cache.Middleware(10 * time.Minute))
 
 	router.GET("/latest", func(c *gin.Context) {
 		base := c.Query("base")
@@ -57,10 +57,12 @@ func setupRouter() *gin.Engine {
 	})
 
 	router.GET("/average", func(c *gin.Context) {
+		fmt.Println("Average endpoint reached")
 		base := c.Query("base")
 		selectedCurrencies := c.Query("forCurrencies")
 		from := c.Query("from")
 		to := c.Query("to")
+		fmt.Printf("From: %s, To: %s\n", from, to)
 
 		selectedCurrenciesArr := strings.Split(selectedCurrencies, ",")
 
@@ -73,6 +75,7 @@ func setupRouter() *gin.Engine {
 
 		_, errFrom := time.Parse("2006-01-02", from)
 		_, errTo := time.Parse("2006-01-02", to)
+		fmt.Printf("errFrom: %v, errTo: %v\n", errFrom, errTo)
 
 		if errFrom != nil || errTo != nil {
 			c.JSON(400, gin.H{
