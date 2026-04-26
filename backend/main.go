@@ -64,7 +64,7 @@ func setupRouter() *gin.Engine {
 
 		selectedCurrenciesArr := strings.Split(selectedCurrencies, ",")
 
-		if selectedCurrenciesArr == nil || len(selectedCurrenciesArr) == 0 {
+		if selectedCurrencies == "" {
 			c.JSON(400, gin.H{
 				"error": "no selected currencies",
 			})
