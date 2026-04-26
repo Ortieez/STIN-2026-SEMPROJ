@@ -3,7 +3,10 @@ package main
 import (
 	"backend/pkg/api"
 	"backend/pkg/storage"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,11 +38,19 @@ func (m *MockExchangeApi) GetAverageExchangeRateForCurrencies(base, selected, fr
 	return m.AverageFunc(base, selected, from, to)
 }
 
+func hashString(s string) string {
+	hash := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(hash[:])
+}
+
+var validToken = hashString("admin:pass")
+var expectedUserHash = hashString("admin")
+var expectedPassHash = hashString("pass")
+
 func TestMain(m *testing.M) {
 	os.Setenv("CACHE_FILE_PATH", "test_main_cache.json")
 	os.Setenv("USER_SETTINGS_PATH", "test_settings.json")
 	os.Setenv("LOG_FILE_PATH", "test_app.log")
-	os.Setenv("AUTH_TOKEN", "test-token")
 	os.Setenv("LOGIN_USERNAME", "admin")
 	os.Setenv("LOGIN_PASSWORD", "pass")
 
@@ -57,7 +68,7 @@ func TestLoginEndpoint(t *testing.T) {
 	router := setupRouter(mockApi, store)
 
 	w := httptest.NewRecorder()
-	loginData := `{"username":"admin","password":"pass"}`
+	loginData := fmt.Sprintf(`{"username":"%s","password":"%s"}`, expectedUserHash, expectedPassHash)
 	req := httptest.NewRequest("POST", "/login", strings.NewReader(loginData))
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
@@ -68,8 +79,8 @@ func TestLoginEndpoint(t *testing.T) {
 
 	var resp map[string]string
 	json.Unmarshal(w.Body.Bytes(), &resp)
-	if resp["token"] != "test-token" {
-		t.Errorf("Expected token test-token, got %s", resp["token"])
+	if resp["token"] != validToken {
+		t.Errorf("Expected token %s, got %s", validToken, resp["token"])
 	}
 }
 
@@ -102,7 +113,7 @@ func TestLatestEndpoint(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/latest?base=EUR", nil)
-	req.Header.Set("Authorization", "test-token")
+	req.Header.Set("Authorization", validToken)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -119,7 +130,7 @@ func TestSettingsEndpoints(t *testing.T) {
 	w := httptest.NewRecorder()
 	settingsData := `{"baseCurrency":"USD","selectedCurrencies":["EUR","CZK"]}`
 	req := httptest.NewRequest("POST", "/settings", strings.NewReader(settingsData))
-	req.Header.Set("Authorization", "test-token")
+	req.Header.Set("Authorization", validToken)
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(w, req)
 
@@ -130,7 +141,7 @@ func TestSettingsEndpoints(t *testing.T) {
 	// Test GET settings
 	w = httptest.NewRecorder()
 	req = httptest.NewRequest("GET", "/settings", nil)
-	req.Header.Set("Authorization", "test-token")
+	req.Header.Set("Authorization", validToken)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

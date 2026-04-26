@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,7 +16,6 @@ func TestLoginHandler(t *testing.T) {
 	// Plain credentials in .env
 	os.Setenv("LOGIN_USERNAME", "admin")
 	os.Setenv("LOGIN_PASSWORD", "password123")
-	os.Setenv("AUTH_TOKEN", "testtoken")
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -46,7 +46,9 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	os.Setenv("AUTH_TOKEN", "valid-token")
+	os.Setenv("LOGIN_USERNAME", "admin")
+	os.Setenv("LOGIN_PASSWORD", "password123")
+	expectedToken := hashString(fmt.Sprintf("%s:%s", "admin", "password123"))
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
@@ -56,7 +58,7 @@ func TestMiddleware(t *testing.T) {
 	// Valid token
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/protected", nil)
-	req.Header.Set("Authorization", "valid-token")
+	req.Header.Set("Authorization", expectedToken)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {

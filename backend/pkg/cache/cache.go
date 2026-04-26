@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -92,6 +93,11 @@ func (w *responseBodyWriter) Write(b []byte) (int, error) {
 
 func Middleware(duration time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		if c.Request.Method != http.MethodGet {
+			c.Next()
+			return
+		}
+
 		key := c.Request.RequestURI
 
 		cachedData := GetCachedRoute(key)
