@@ -23,19 +23,31 @@ type MockExchangeApi struct {
 }
 
 func (m *MockExchangeApi) GetLatestExchangeNumbers(base string) api.ExchangeApiBaseResponse {
-	return m.LatestFunc(base)
+	if m.LatestFunc != nil {
+		return m.LatestFunc(base)
+	}
+	return api.ExchangeApiBaseResponse{}
 }
 
 func (m *MockExchangeApi) GetStrongestCurrencyToBase(base string) api.ExchangeApiBaseResponse {
-	return m.StrongFunc(base)
+	if m.StrongFunc != nil {
+		return m.StrongFunc(base)
+	}
+	return api.ExchangeApiBaseResponse{}
 }
 
 func (m *MockExchangeApi) GetWeakestCurrencyToBase(base string) api.ExchangeApiBaseResponse {
-	return m.WeakFunc(base)
+	if m.WeakFunc != nil {
+		return m.WeakFunc(base)
+	}
+	return api.ExchangeApiBaseResponse{}
 }
 
 func (m *MockExchangeApi) GetAverageExchangeRateForCurrencies(base, selected, from, to string) api.ExchangeApiTimeSeriesResponse {
-	return m.AverageFunc(base, selected, from, to)
+	if m.AverageFunc != nil {
+		return m.AverageFunc(base, selected, from, to)
+	}
+	return api.ExchangeApiTimeSeriesResponse{}
 }
 
 func hashString(s string) string {
@@ -109,15 +121,104 @@ func TestLatestEndpoint(t *testing.T) {
 		},
 	}
 	store := storage.NewStorage()
+	// write settings to trigger the "base == ''" fallback
+	store.SaveSettings(storage.UserSettings{BaseCurrency: "GBP", SelectedCurrencies: []string{"USD"}})
 	router := setupRouter(mockApi, store)
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/latest?base=EUR", nil)
+	req := httptest.NewRequest("GET", "/latest", nil) // empty base, will fallback to GBP
 	req.Header.Set("Authorization", validToken)
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+	
+	// Test empty settings fallback
+	os.Remove("test_settings.json")
+	w2 := httptest.NewRecorder()
+	req2 := httptest.NewRequest("GET", "/latest", nil)
+	req2.Header.Set("Authorization", validToken)
+	router.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w2.Code)
+	}
+}
+
+func TestStrongestWeakestEndpoints(t *testing.T) {
+	mockApi := &MockExchangeApi{
+		StrongFunc: func(base string) api.ExchangeApiBaseResponse {
+			return api.ExchangeApiBaseResponse{Base: base}
+		},
+		WeakFunc: func(base string) api.ExchangeApiBaseResponse {
+			return api.ExchangeApiBaseResponse{Base: base}
+		},
+	}
+	store := storage.NewStorage()
+	router := setupRouter(mockApi, store)
+
+	endpoints := []string{"/strongest", "/weakest"}
+	for _, ep := range endpoints {
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", ep+"?base=EUR", nil)
+		req.Header.Set("Authorization", validToken)
+		router.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("Expected status 200 for %s, got %d", ep, w.Code)
+		}
+		
+		// Fallback branches
+		w2 := httptest.NewRecorder()
+		req2 := httptest.NewRequest("GET", ep, nil)
+		req2.Header.Set("Authorization", validToken)
+		router.ServeHTTP(w2, req2)
+		if w2.Code != http.StatusOK {
+			t.Errorf("Expected status 200 for empty base on %s, got %d", ep, w2.Code)
+		}
+	}
+}
+
+func TestAverageEndpoint(t *testing.T) {
+	mockApi := &MockExchangeApi{
+		AverageFunc: func(base, selected, from, to string) api.ExchangeApiTimeSeriesResponse {
+			return api.ExchangeApiTimeSeriesResponse{
+				Rates: map[string]map[string]float64{
+					"2024-01-01": {"USD": 1.0},
+				},
+			}
+		},
+	}
+	store := storage.NewStorage()
+	store.SaveSettings(storage.UserSettings{BaseCurrency: "EUR", SelectedCurrencies: []string{"USD"}})
+	router := setupRouter(mockApi, store)
+
+	// Valid request
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/average?base=EUR&forCurrencies=USD&from=2024-01-01&to=2024-01-02", nil)
+	req.Header.Set("Authorization", validToken)
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+
+	// Invalid dates
+	wDate := httptest.NewRecorder()
+	reqDate := httptest.NewRequest("GET", "/average?from=invalid&to=invalid", nil)
+	reqDate.Header.Set("Authorization", validToken)
+	router.ServeHTTP(wDate, reqDate)
+	if wDate.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400 for invalid dates, got %d", wDate.Code)
+	}
+
+	// Missing selected currencies
+	os.Remove("test_settings.json")
+	wCur := httptest.NewRecorder()
+	reqCur := httptest.NewRequest("GET", "/average?from=2024-01-01&to=2024-01-02", nil)
+	reqCur.Header.Set("Authorization", validToken)
+	router.ServeHTTP(wCur, reqCur)
+	if wCur.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400 for empty currencies, got %d", wCur.Code)
 	}
 }
 
@@ -136,6 +237,15 @@ func TestSettingsEndpoints(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+	
+	// Test POST Invalid JSON
+	wErr := httptest.NewRecorder()
+	reqErr := httptest.NewRequest("POST", "/settings", strings.NewReader("{invalid"))
+	reqErr.Header.Set("Authorization", validToken)
+	router.ServeHTTP(wErr, reqErr)
+	if wErr.Code != http.StatusBadRequest {
+		t.Errorf("Expected status 400, got %d", wErr.Code)
 	}
 
 	// Test GET settings
