@@ -56,12 +56,17 @@ type ExchangeApi interface {
 	GetAverageExchangeRateForCurrencies(baseCurrency string, selectedCurrencies string, from string, to string) ExchangeApiTimeSeriesResponse
 }
 
+type Logger interface {
+	Log(level, message string)
+}
+
 type ExchangeApiClient struct {
 	BaseUrl           string
 	PossibleEndpoints map[string]string
+	logger            Logger
 }
 
-func (e ExchangeApiClient) GetStrongestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
+func (e *ExchangeApiClient) GetStrongestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
 	data := e.GetLatestExchangeNumbers(baseCurrency)
 	strongestKey, strongestVal, _, _ := getMinMaxRates(data.Rates)
 
@@ -74,7 +79,7 @@ func (e ExchangeApiClient) GetStrongestCurrencyToBase(baseCurrency string) Excha
 	}
 }
 
-func (e ExchangeApiClient) GetWeakestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
+func (e *ExchangeApiClient) GetWeakestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
 	data := e.GetLatestExchangeNumbers(baseCurrency)
 	_, _, weakestKey, weakestVal := getMinMaxRates(data.Rates)
 
@@ -87,13 +92,16 @@ func (e ExchangeApiClient) GetWeakestCurrencyToBase(baseCurrency string) Exchang
 	}
 }
 
-func (e ExchangeApiClient) GetLatestExchangeNumbers(baseCurrency string) ExchangeApiBaseResponse {
+func (e *ExchangeApiClient) GetLatestExchangeNumbers(baseCurrency string) ExchangeApiBaseResponse {
 
 	url := e.BaseUrl + e.PossibleEndpoints["LATEST"] + "?base=" + baseCurrency
 
 	resp, err := http.Get(url)
 
 	if err != nil {
+		if e.logger != nil {
+			e.logger.Log("ERROR", fmt.Sprintf("API Call Failed: %v", err))
+		}
 		panic(err)
 	}
 
@@ -108,13 +116,16 @@ func (e ExchangeApiClient) GetLatestExchangeNumbers(baseCurrency string) Exchang
 
 	err = json.NewDecoder(resp.Body).Decode(res)
 	if err != nil {
+		if e.logger != nil {
+			e.logger.Log("ERROR", fmt.Sprintf("JSON Decode Failed: %v", err))
+		}
 		panic(err)
 	}
 
 	return *res
 }
 
-func (e ExchangeApiClient) GetAverageExchangeRateForCurrencies(baseCurrency string, selectedCurrencies string, from string, to string) ExchangeApiTimeSeriesResponse {
+func (e *ExchangeApiClient) GetAverageExchangeRateForCurrencies(baseCurrency string, selectedCurrencies string, from string, to string) ExchangeApiTimeSeriesResponse {
 	url := e.BaseUrl + "/" + from + ".." + to + "?base=" + baseCurrency + "&symbols=" + selectedCurrencies
 
 	fmt.Println(url)
@@ -122,6 +133,9 @@ func (e ExchangeApiClient) GetAverageExchangeRateForCurrencies(baseCurrency stri
 	resp, err := http.Get(url)
 
 	if err != nil {
+		if e.logger != nil {
+			e.logger.Log("ERROR", fmt.Sprintf("API Call Failed: %v", err))
+		}
 		panic(err)
 	}
 
@@ -136,13 +150,16 @@ func (e ExchangeApiClient) GetAverageExchangeRateForCurrencies(baseCurrency stri
 
 	err = json.NewDecoder(resp.Body).Decode(res)
 	if err != nil {
+		if e.logger != nil {
+			e.logger.Log("ERROR", fmt.Sprintf("JSON Decode Failed: %v", err))
+		}
 		panic(err)
 	}
 
 	return *res
 }
 
-func NewExchangeApiClient() ExchangeApi {
+func NewExchangeApiClient(logger Logger) ExchangeApi {
 	_ = godotenv.Load()
 
 	baseUrl := os.Getenv("BASE_API_URL")
@@ -156,5 +173,6 @@ func NewExchangeApiClient() ExchangeApi {
 	return &ExchangeApiClient{
 		BaseUrl:           baseUrl,
 		PossibleEndpoints: possibleEndpoints,
+		logger:            logger,
 	}
 }

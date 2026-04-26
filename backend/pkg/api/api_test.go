@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+type MockLogger struct {
+	Logs []string
+}
+
+func (m *MockLogger) Log(level, message string) {
+	m.Logs = append(m.Logs, level+": "+message)
+}
+
 func TestGetMinMaxRates(t *testing.T) {
 	rates := map[string]float64{
 		"USD": 1.1,
@@ -137,12 +145,82 @@ func TestGetAverageExchangeRateForCurrencies(t *testing.T) {
 	}
 }
 
+func TestExchangeApiErrors(t *testing.T) {
+	logger := &MockLogger{}
+	client := &ExchangeApiClient{
+		BaseUrl: "",
+		logger:  logger,
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic on invalid URL")
+		}
+	}()
+	client.GetLatestExchangeNumbers("EUR")
+}
+
+func TestExchangeApiJsonErrors(t *testing.T) {
+	logger := &MockLogger{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := &ExchangeApiClient{
+		BaseUrl: server.URL,
+		logger:  logger,
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic on invalid JSON")
+		}
+	}()
+	client.GetLatestExchangeNumbers("EUR")
+}
+
+func TestAverageApiErrors(t *testing.T) {
+	logger := &MockLogger{}
+	client := &ExchangeApiClient{
+		BaseUrl: "",
+		logger:  logger,
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic on invalid URL")
+		}
+	}()
+	client.GetAverageExchangeRateForCurrencies("EUR", "USD", "2024-01-01", "2024-01-02")
+}
+
+func TestAverageApiJsonErrors(t *testing.T) {
+	logger := &MockLogger{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := &ExchangeApiClient{
+		BaseUrl: server.URL,
+		logger:  logger,
+	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Expected panic on invalid JSON")
+		}
+	}()
+	client.GetAverageExchangeRateForCurrencies("EUR", "USD", "2024-01-01", "2024-01-02")
+}
+
 func TestNewExchangeApiClient(t *testing.T) {
 	os.Setenv("BASE_API_URL", "http://test.com")
 	os.Setenv("API_URL_LATEST", "/latest")
 	os.Setenv("API_URL_CURRENCIES", "/curr")
 
-	client := NewExchangeApiClient()
+	client := NewExchangeApiClient(nil)
 	c, ok := client.(*ExchangeApiClient)
 	if !ok {
 		t.Fatal("Expected *ExchangeApiClient type")
@@ -152,4 +230,3 @@ func TestNewExchangeApiClient(t *testing.T) {
 		t.Errorf("Expected BaseUrl http://test.com, got %s", c.BaseUrl)
 	}
 }
-

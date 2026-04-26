@@ -5,3 +5,6 @@ DSP - STIN 2026.md
 *.out
 cache.json
 test_*.json
+.env
+*.log
+settings.json
