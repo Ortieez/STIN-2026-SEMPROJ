@@ -16,25 +16,15 @@ func hashString(s string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// getAuthCredentials retrieves values from .env with minimal hardcoded fallbacks
 func getAuthCredentials() (string, string, string) {
 	_ = godotenv.Load()
 	user := os.Getenv("LOGIN_USERNAME")
 	pass := os.Getenv("LOGIN_PASSWORD")
-	token := os.Getenv("AUTH_TOKEN")
+	token := ""
 
-	// If token is missing, generate it dynamically from current user/pass
-	if token == "" {
-		u := user
-		if u == "" {
-			u = "admin"
-		}
-		p := pass
-		if p == "" {
-			p = "password123"
-		}
-		token = hashString(fmt.Sprintf("%s:%s", u, p))
-	}
+	u := user
+	p := pass
+	token = hashString(fmt.Sprintf("%s:%s", u, p))
 
 	return user, pass, token
 }
@@ -42,8 +32,10 @@ func getAuthCredentials() (string, string, string) {
 func Middleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, _, expectedToken := getAuthCredentials()
-		
+
 		token := c.GetHeader("Authorization")
+		fmt.Println(token)
+		fmt.Println(expectedToken)
 		if token != expectedToken {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
@@ -60,14 +52,6 @@ type LoginRequest struct {
 
 func LoginHandler(c *gin.Context) {
 	envUser, envPass, expectedToken := getAuthCredentials()
-
-	// Use defaults if .env is completely empty
-	if envUser == "" {
-		envUser = "admin"
-	}
-	if envPass == "" {
-		envPass = "password123"
-	}
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
