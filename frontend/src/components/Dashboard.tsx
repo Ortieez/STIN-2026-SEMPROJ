@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle, Lock } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2, AlertCircle, Lock, AlertTriangle } from "lucide-react";
 import { useTranslation } from "@/i18n/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -29,6 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [loading, setLoading] = useState(false);
   const [avgLoading, setAvgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avgError, setAvgError] = useState<string | null>(null);
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
@@ -74,7 +75,16 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
     }
   }, [view, fetchDashboardData]);
 
+  const hasCurrencies = latestData?.data && Object.keys(latestData.data.rates).length > 0;
+
   const fetchAverage = async () => {
+    setAvgError(null);
+    
+    if (!hasCurrencies) {
+      setAvgError(t('dashboard.avg_calc.no_currencies_error'));
+      return;
+    }
+
     setAvgLoading(true);
     try {
       const response = await fetch(`http://localhost:3000/average?from=${fromDate}&to=${toDate}`, {
@@ -89,9 +99,13 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
       }
       if (response.ok) {
         setAverageData(await response.json());
+      } else {
+        const data = await response.json();
+        setAvgError(data.error || 'Failed to calculate');
       }
     } catch (err) {
       console.error('Error fetching average data', err);
+      setAvgError(t('dashboard.error_connection'));
     } finally {
       setAvgLoading(false);
     }
@@ -100,8 +114,6 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   if (view === 'settings') {
     return <Settings token={token} onBack={() => setView('dashboard')} />;
   }
-
-  const hasCurrencies = latestData?.data && Object.keys(latestData.data.rates).length > 0;
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl animate-in fade-in duration-500">
@@ -260,6 +272,13 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                   <CardDescription>{t('dashboard.avg_calc.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {avgError && (
+                    <div className="flex items-center gap-2 p-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20 animate-in slide-in-from-top-2">
+                      <AlertTriangle className="h-5 w-5 shrink-0" />
+                      <p className="text-sm font-medium">{avgError}</p>
+                    </div>
+                  )}
+
                   <div className="flex flex-col md:flex-row items-end gap-4 p-4 bg-muted/20 rounded-xl border">
                     <div className="space-y-2 flex-1 w-full">
                       <Label>{t('dashboard.avg_calc.from')}</Label>

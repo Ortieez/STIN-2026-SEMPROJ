@@ -37,6 +37,7 @@
       "to": "Datum do",
       "calculate": "Vypočítat",
       "no_currencies_tooltip": "Pro použití kalkulačky přidejte sledované měny v Nastavení",
+      "no_currencies_error": "Pro výpočet průměrů vyberte v Nastavení alespoň jednu měnu.",
       "results_for": "Výsledky pro"
     }
   },

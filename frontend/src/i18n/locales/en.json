@@ -37,6 +37,7 @@
       "to": "End Date",
       "calculate": "Calculate",
       "no_currencies_tooltip": "Add tracked currencies in Settings to use the calculator",
+      "no_currencies_error": "Please select at least one currency in Settings to calculate averages.",
       "results_for": "Results for"
     }
   },
