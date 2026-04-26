@@ -183,7 +183,7 @@ func TestExchangeApiJsonErrors(t *testing.T) {
 func TestAverageApiErrors(t *testing.T) {
 	logger := &MockLogger{}
 	client := &ExchangeApiClient{
-		BaseUrl: "http://invalid-url-that-does-not-exist.com",
+		BaseUrl: "",
 		logger:  logger,
 	}
 
