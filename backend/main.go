@@ -4,6 +4,7 @@ import (
 	"backend/pkg/api"
 	"backend/pkg/auth"
 	"backend/pkg/cache"
+	"backend/pkg/i18n"
 	"backend/pkg/storage"
 	"fmt"
 	"strings"
@@ -24,7 +25,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Accept-Language")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
 
 		if c.Request.Method == "OPTIONS" {
@@ -112,7 +113,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 
 		if selectedCurrencies == "" {
 			c.JSON(400, gin.H{
-				"error": "no selected currencies",
+				"error": i18n.T(c, "no_selected_currencies"),
 			})
 			return
 		}
@@ -122,7 +123,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 
 		if errFrom != nil || errTo != nil {
 			c.JSON(400, gin.H{
-				"error": "date format error",
+				"error": i18n.T(c, "date_format_error"),
 			})
 			return
 		}
@@ -157,7 +158,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 	protected.GET("/settings", func(c *gin.Context) {
 		settings, err := store.GetSettings()
 		if err != nil {
-			c.JSON(500, gin.H{"error": "Failed to load settings"})
+			c.JSON(500, gin.H{"error": i18n.T(c, "failed_load_settings")})
 			return
 		}
 		c.JSON(200, settings)
@@ -166,14 +167,14 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 	protected.POST("/settings", func(c *gin.Context) {
 		var settings storage.UserSettings
 		if err := c.ShouldBindJSON(&settings); err != nil {
-			c.JSON(400, gin.H{"error": "Invalid request"})
+			c.JSON(400, gin.H{"error": i18n.T(c, "invalid_request")})
 			return
 		}
 		if err := store.SaveSettings(settings); err != nil {
-			c.JSON(500, gin.H{"error": "Failed to save settings"})
+			c.JSON(500, gin.H{"error": i18n.T(c, "failed_save_settings")})
 			return
 		}
-		c.JSON(200, gin.H{"message": "Settings saved"})
+		c.JSON(200, gin.H{"message": i18n.T(c, "settings_saved")})
 	})
 
 	return router

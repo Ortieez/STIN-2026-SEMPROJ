@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageContext";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface LoginProps {
   onLogin: (token: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const { t, language } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +30,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       const response = await fetch('http://localhost:3000/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept-Language': language
+        },
         body: JSON.stringify({ username: hashedUsername, password: hashedPassword }),
       });
 
@@ -37,22 +42,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (response.ok) {
         onLogin(data.token);
       } else {
-        setError(data.error || 'Invalid credentials');
+        setError(data.error || t('login.invalid_credentials'));
       }
     } catch (err) {
-      setError('Failed to connect to server');
+      setError(t('login.error_connection'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh] px-4">
+    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 space-y-4">
+      <div className="w-full max-w-md flex justify-end">
+        <LanguageSwitcher />
+      </div>
       <Card className="w-full max-w-md shadow-lg border-2">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-3xl font-bold text-center">Login</CardTitle>
+          <CardTitle className="text-3xl font-bold text-center">{t('login.title')}</CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access the dashboard
+            {t('login.description')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -63,7 +71,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t('login.username')}</Label>
               <Input
                 id="username"
                 type="text"
@@ -74,7 +82,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t('login.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -87,7 +95,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <CardFooter>
             <Button className="w-full" type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? t('login.logging_in') : t('login.button')}
             </Button>
           </CardFooter>
         </form>

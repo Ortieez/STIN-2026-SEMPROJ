@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogOut, Settings as SettingsIcon, TrendingUp, TrendingDown, RefreshCcw, Calculator, Loader2 } from "lucide-react";
+import { useTranslation } from "@/i18n/LanguageContext";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface DashboardProps {
   token: string;
@@ -14,6 +16,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
+  const { t, language } = useTranslation();
   const [view, setView] = useState<'dashboard' | 'settings'>('dashboard');
   const [latestData, setLatestData] = useState<any>(null);
   const [strongest, setStrongest] = useState<any>(null);
@@ -34,7 +37,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const headers = { Authorization: token };
+      const headers = { 
+        Authorization: token,
+        'Accept-Language': language
+      };
       const [latestRes, strongRes, weakRes] = await Promise.all([
         fetch('http://localhost:3000/latest', { headers }),
         fetch('http://localhost:3000/strongest', { headers }),
@@ -55,7 +61,10 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
     setAvgLoading(true);
     try {
       const response = await fetch(`http://localhost:3000/average?from=${fromDate}&to=${toDate}`, {
-        headers: { Authorization: token }
+        headers: { 
+          Authorization: token,
+          'Accept-Language': language
+        }
       });
       if (response.ok) {
         setAverageData(await response.json());
@@ -75,21 +84,23 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
     <div className="container mx-auto py-8 px-4 max-w-6xl animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b pb-6">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight">Currency Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Real-time exchange rates and analytics</p>
+          <h1 className="text-4xl font-extrabold tracking-tight">{t('dashboard.title')}</h1>
+          <p className="text-muted-foreground mt-1">{t('dashboard.subtitle')}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <LanguageSwitcher />
+          <div className="h-8 w-[1px] bg-border mx-1 hidden sm:block"></div>
           <Button variant="outline" size="sm" onClick={fetchDashboardData}>
             <RefreshCcw className="h-4 w-4 mr-2" />
-            Refresh
+            {t('dashboard.refresh')}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setView('settings')}>
             <SettingsIcon className="h-4 w-4 mr-2" />
-            Settings
+            {t('dashboard.settings')}
           </Button>
           <Button variant="destructive" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4 mr-2" />
-            Logout
+            {t('dashboard.logout')}
           </Button>
         </div>
       </header>
@@ -97,15 +108,14 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-lg font-medium animate-pulse">Fetching latest markets...</p>
+          <p className="text-lg font-medium animate-pulse">{t('dashboard.fetching')}</p>
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Quick Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="border-l-4 border-l-green-500 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Strongest Currency</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.strongest')}</CardTitle>
                 <TrendingUp className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
@@ -115,13 +125,13 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                     <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground mt-1">Relative to {strongest?.data?.base}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {strongest?.data?.base}</p>
               </CardContent>
             </Card>
 
             <Card className="border-l-4 border-l-red-500 shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Weakest Currency</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('dashboard.weakest')}</CardTitle>
                 <TrendingDown className="h-4 w-4 text-red-500" />
               </CardHeader>
               <CardContent>
@@ -131,30 +141,30 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                     <span className="text-muted-foreground text-lg">{v.toFixed(4)}</span>
                   </div>
                 ))}
-                <p className="text-xs text-muted-foreground mt-1">Relative to {weakest?.data?.base}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('dashboard.relative_to')} {weakest?.data?.base}</p>
               </CardContent>
             </Card>
           </div>
 
           <Tabs defaultValue="rates" className="w-full">
             <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
-              <TabsTrigger value="rates">Market Rates</TabsTrigger>
-              <TabsTrigger value="average">Historical Avg</TabsTrigger>
+              <TabsTrigger value="rates">{t('dashboard.tabs.rates')}</TabsTrigger>
+              <TabsTrigger value="average">{t('dashboard.tabs.average')}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="rates" className="mt-0">
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle>Latest Exchange Rates</CardTitle>
-                  <CardDescription>Current market values for your tracked currencies (Base: {latestData?.data?.base})</CardDescription>
+                  <CardTitle>{t('dashboard.latest.title')}</CardTitle>
+                  <CardDescription>{t('dashboard.latest.description', { base: latestData?.data?.base || '...' })}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="rounded-md border overflow-hidden">
                     <Table>
                       <TableHeader className="bg-muted/50">
                         <TableRow>
-                          <TableHead className="font-bold">Currency</TableHead>
-                          <TableHead className="text-right font-bold">Exchange Rate</TableHead>
+                          <TableHead className="font-bold">{t('dashboard.latest.col_currency')}</TableHead>
+                          <TableHead className="text-right font-bold">{t('dashboard.latest.col_rate')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -168,7 +178,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={2} className="text-center py-8 text-muted-foreground italic">
-                              No tracked currencies. Update them in Settings.
+                              {t('dashboard.latest.empty')}
                             </TableCell>
                           </TableRow>
                         )}
@@ -182,29 +192,29 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
             <TabsContent value="average" className="mt-0">
               <Card className="shadow-lg">
                 <CardHeader>
-                  <CardTitle>Average Rates Calculator</CardTitle>
-                  <CardDescription>Analyze currency performance over a specific period</CardDescription>
+                  <CardTitle>{t('dashboard.avg_calc.title')}</CardTitle>
+                  <CardDescription>{t('dashboard.avg_calc.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col md:flex-row items-end gap-4 p-4 bg-muted/20 rounded-xl border">
                     <div className="space-y-2 flex-1 w-full">
-                      <Label>Start Date</Label>
+                      <Label>{t('dashboard.avg_calc.from')}</Label>
                       <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
                     </div>
                     <div className="space-y-2 flex-1 w-full">
-                      <Label>End Date</Label>
+                      <Label>{t('dashboard.avg_calc.to')}</Label>
                       <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
                     </div>
                     <Button className="w-full md:w-auto" onClick={fetchAverage} disabled={avgLoading}>
                       {avgLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Calculator className="h-4 w-4 mr-2" />}
-                      Calculate
+                      {t('dashboard.avg_calc.calculate')}
                     </Button>
                   </div>
 
                   {averageData?.data && (
                     <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-300">
                       <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider px-1">
-                        Results for {averageData.data.date}
+                        {t('dashboard.avg_calc.results_for')} {averageData.data.date}
                       </h4>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {Object.entries(averageData.data.rates).map(([curr, rate]: any) => (

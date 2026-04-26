@@ -1,0 +1,57 @@
+{
+  "login": {
+    "title": "Přihlášení",
+    "description": "Zadejte své údaje pro přístup k panelu",
+    "username": "Uživatelské jméno",
+    "password": "Heslo",
+    "button": "Přihlásit se",
+    "logging_in": "Přihlašování...",
+    "error_connection": "Nepodařilo se připojit k serveru"
+  },
+  "dashboard": {
+    "title": "Měnový panel",
+    "subtitle": "Aktuální směnné kurzy a analýzy",
+    "refresh": "Obnovit",
+    "settings": "Nastavení",
+    "logout": "Odhlásit se",
+    "fetching": "Načítání trhů...",
+    "strongest": "Nejsilnější měna",
+    "weakest": "Nejslabší měna",
+    "relative_to": "Vzhledem k",
+    "tabs": {
+      "rates": "Tržní kurzy",
+      "average": "Historický průměr"
+    },
+    "latest": {
+      "title": "Aktuální směnné kurzy",
+      "description": "Současné tržní hodnoty pro vaše sledované měny (Základ: {{base}})",
+      "col_currency": "Měna",
+      "col_rate": "Směnný kurz",
+      "empty": "Žádné sledované měny. Aktualizujte je v nastavení."
+    },
+    "avg_calc": {
+      "title": "Kalkulačka průměrných kurzů",
+      "description": "Analyzujte výkonnost měn za určité období",
+      "from": "Datum od",
+      "to": "Datum do",
+      "calculate": "Vypočítat",
+      "results_for": "Výsledky pro"
+    }
+  },
+  "settings": {
+    "title": "Uživatelské nastavení",
+    "description": "Nakonfigurujte svou základní měnu a seznam sledovaných měn",
+    "base_currency": "Základní měna",
+    "tracked_currencies": "Sledované měny",
+    "empty_currencies": "Žádné vybrané měny",
+    "add_placeholder": "Přidat měnu (např. USD)",
+    "add": "Přidat",
+    "cancel": "Zrušit",
+    "save": "Uložit změny",
+    "saving": "Ukládání...",
+    "back": "Zpět na panel",
+    "success": "Nastavení úspěšně uloženo!",
+    "error": "Nepodařilo se uložit nastavení",
+    "error_connection": "Chyba při připojování k serveru"
+  }
+}
