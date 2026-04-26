@@ -170,6 +170,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 			c.JSON(400, gin.H{"error": i18n.T(c, "invalid_request")})
 			return
 		}
+		fmt.Printf("Saving settings: %+v\n", settings)
 		if err := store.SaveSettings(settings); err != nil {
 			c.JSON(500, gin.H{"error": i18n.T(c, "failed_save_settings")})
 			return
