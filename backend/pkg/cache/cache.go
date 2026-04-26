@@ -85,7 +85,7 @@ type responseBodyWriter struct {
 	body *bytes.Buffer
 }
 
-func (w responseBodyWriter) Write(b []byte) (int, error) {
+func (w *responseBodyWriter) Write(b []byte) (int, error) {
 	w.body.Write(b)
 	return w.ResponseWriter.Write(b)
 }

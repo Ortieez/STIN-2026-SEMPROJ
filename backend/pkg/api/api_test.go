@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 )
 
@@ -135,3 +136,20 @@ func TestGetAverageExchangeRateForCurrencies(t *testing.T) {
 		t.Errorf("Expected 2 days of rates, got %d", len(res.Rates))
 	}
 }
+
+func TestNewExchangeApiClient(t *testing.T) {
+	os.Setenv("BASE_API_URL", "http://test.com")
+	os.Setenv("API_URL_LATEST", "/latest")
+	os.Setenv("API_URL_CURRENCIES", "/curr")
+
+	client := NewExchangeApiClient()
+	c, ok := client.(*ExchangeApiClient)
+	if !ok {
+		t.Fatal("Expected *ExchangeApiClient type")
+	}
+
+	if c.BaseUrl != "http://test.com" {
+		t.Errorf("Expected BaseUrl http://test.com, got %s", c.BaseUrl)
+	}
+}
+
