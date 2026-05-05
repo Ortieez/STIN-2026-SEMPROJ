@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: /home/ortieez/stin/backend
+      dockerfile: Dockerfile
+    container_name: stin_backend
+    restart: unless-stopped
+    env_file:
+      - /home/ortieez/stin/backend/.env
+    volumes:
+      - /home/ortieez/stin/backend:/app
+    ports:
+      - "8080:8080"
+ 
+  frontend:
+    build:
+      context: /home/ortieez/stin/frontend
+      dockerfile: Dockerfile
+    container_name: stin_frontend
+    restart: unless-stopped
+    env_file:
+      - /home/ortieez/stin/frontend/.env
+    volumes:
+      - /home/ortieez/stin/frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+ 
