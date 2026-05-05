@@ -37,15 +37,16 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 	})
 
 	// Public endpoints
-	router.POST("/login", auth.LoginHandler)
+	router.POST("/login", auth.LoginHandler(store))
 
 	// Protected group (No Cache - for Settings)
 	protectedNoCache := router.Group("/")
-	protectedNoCache.Use(auth.Middleware())
+	protectedNoCache.Use(auth.Middleware(store))
 
 	protectedNoCache.GET("/settings", func(c *gin.Context) {
 		settings, err := store.GetSettings()
 		if err != nil {
+			store.Log("ERROR", fmt.Sprintf("Failed to load settings: %v", err))
 			c.JSON(500, gin.H{"error": i18n.T(c, "failed_load_settings")})
 			return
 		}
@@ -55,10 +56,12 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 	protectedNoCache.POST("/settings", func(c *gin.Context) {
 		var settings storage.UserSettings
 		if err := c.ShouldBindJSON(&settings); err != nil {
+			store.Log("ERROR", fmt.Sprintf("Invalid settings request: %v", err))
 			c.JSON(400, gin.H{"error": i18n.T(c, "invalid_request")})
 			return
 		}
 		if err := store.SaveSettings(settings); err != nil {
+			store.Log("ERROR", fmt.Sprintf("Failed to save settings: %v", err))
 			c.JSON(500, gin.H{"error": i18n.T(c, "failed_save_settings")})
 			return
 		}
@@ -67,7 +70,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 
 	// Protected group (With Cache - for Data)
 	protectedCached := router.Group("/")
-	protectedCached.Use(auth.Middleware())
+	protectedCached.Use(auth.Middleware(store))
 	protectedCached.Use(cache.Middleware(10 * time.Minute))
 
 	protectedCached.GET("/latest", func(c *gin.Context) {
@@ -120,12 +123,12 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 			ratesToCompare = filtered
 		}
 
-		// Find strongest among filtered
+		// Find strongest among filtered (Highest nominal value)
 		strongestKey := ""
 		var strongestVal float64
 		first := true
 		for k, v := range ratesToCompare {
-			if first || v < strongestVal {
+			if first || v > strongestVal {
 				strongestVal = v
 				strongestKey = k
 				first = false
@@ -165,13 +168,15 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 			ratesToCompare = filtered
 		}
 
-		// Find weakest among filtered
+		// Find weakest among filtered (Lowest nominal value)
 		weakestKey := ""
 		var weakestVal float64
+		first := true
 		for k, v := range ratesToCompare {
-			if v > weakestVal {
+			if first || v < weakestVal {
 				weakestVal = v
 				weakestKey = k
+				first = false
 			}
 		}
 
@@ -203,6 +208,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		}
 
 		if selectedCurrencies == "" {
+			store.Log("ERROR", "Average calculation failed: no currencies selected")
 			c.JSON(400, gin.H{"error": i18n.T(c, "no_selected_currencies")})
 			return
 		}
@@ -212,24 +218,30 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		_, errTo := time.Parse("2006-01-02", to)
 
 		if errFrom != nil || errTo != nil {
+			store.Log("ERROR", fmt.Sprintf("Average calculation failed: invalid date format (from: %s, to: %s)", from, to))
 			c.JSON(400, gin.H{"error": i18n.T(c, "date_format_error")})
 			return
 		}
 
 		data := exchangeApi.GetAverageExchangeRateForCurrencies(base, selectedCurrencies, from, to)
 		averageCurrencies := make(map[string]float64)
-		totalEntries := float64(len(data.Rates))
+		currencyCounts := make(map[string]float64)
 
-		if totalEntries > 0 {
+		if len(data.Rates) > 0 {
 			for _, innerMap := range data.Rates {
 				for _, currency := range selectedCurrenciesArr {
 					if val, ok := innerMap[currency]; ok {
 						averageCurrencies[currency] += val
+						currencyCounts[currency]++
 					}
 				}
 			}
 			for _, currency := range selectedCurrenciesArr {
-				averageCurrencies[currency] /= totalEntries
+				if count, ok := currencyCounts[currency]; ok && count > 0 {
+					averageCurrencies[currency] /= count
+				} else {
+					delete(averageCurrencies, currency)
+				}
 			}
 		}
 

@@ -86,8 +86,8 @@ func TestGetStrongestCurrencyToBase(t *testing.T) {
 
 	res := client.GetStrongestCurrencyToBase("EUR")
 
-	if _, ok := res.Rates["USD"]; !ok {
-		t.Errorf("Expected USD to be strongest")
+	if _, ok := res.Rates["CZK"]; !ok {
+		t.Errorf("Expected CZK to be strongest (highest value)")
 	}
 }
 
@@ -114,8 +114,8 @@ func TestGetWeakestCurrencyToBase(t *testing.T) {
 
 	res := client.GetWeakestCurrencyToBase("EUR")
 
-	if _, ok := res.Rates["CZK"]; !ok {
-		t.Errorf("Expected CZK to be weakest")
+	if _, ok := res.Rates["USD"]; !ok {
+		t.Errorf("Expected USD to be weakest (lowest value)")
 	}
 }
 

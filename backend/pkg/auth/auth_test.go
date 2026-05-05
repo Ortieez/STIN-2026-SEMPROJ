@@ -19,7 +19,7 @@ func TestLoginHandler(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.POST("/login", LoginHandler)
+	router.POST("/login", LoginHandler(nil))
 
 	// Valid login: client sends hashes
 	w := httptest.NewRecorder()
@@ -43,6 +43,15 @@ func TestLoginHandler(t *testing.T) {
 	if w.Code != http.StatusUnauthorized {
 		t.Errorf("Expected 401, got %d", w.Code)
 	}
+
+	// Invalid login: invalid JSON
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/login", bytes.NewBuffer([]byte("{invalid")))
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400, got %d", w.Code)
+	}
 }
 
 func TestMiddleware(t *testing.T) {
@@ -52,7 +61,7 @@ func TestMiddleware(t *testing.T) {
 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
-	router.Use(Middleware())
+	router.Use(Middleware(nil))
 	router.GET("/protected", func(c *gin.Context) { c.Status(200) })
 
 	// Valid token
