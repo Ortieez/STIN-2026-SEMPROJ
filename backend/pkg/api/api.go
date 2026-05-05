@@ -21,13 +21,13 @@ func getMinMaxRates(rates map[string]float64) (minKey string, minVal float64, ma
 			continue
 		}
 
-		// Check for Strongest (Min)
+		// Check for Min (Weakest)
 		if value < minVal {
 			minVal = value
 			minKey = key
 		}
 
-		// Check for Weakest (Max)
+		// Check for Max (Strongest)
 		if value > maxVal {
 			maxVal = value
 			maxKey = key
@@ -68,7 +68,7 @@ type ExchangeApiClient struct {
 
 func (e *ExchangeApiClient) GetStrongestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
 	data := e.GetLatestExchangeNumbers(baseCurrency)
-	strongestKey, strongestVal, _, _ := getMinMaxRates(data.Rates)
+	_, _, strongestKey, strongestVal := getMinMaxRates(data.Rates)
 
 	return ExchangeApiBaseResponse{
 		Base: baseCurrency,
@@ -81,7 +81,7 @@ func (e *ExchangeApiClient) GetStrongestCurrencyToBase(baseCurrency string) Exch
 
 func (e *ExchangeApiClient) GetWeakestCurrencyToBase(baseCurrency string) ExchangeApiBaseResponse {
 	data := e.GetLatestExchangeNumbers(baseCurrency)
-	_, _, weakestKey, weakestVal := getMinMaxRates(data.Rates)
+	weakestKey, weakestVal, _, _ := getMinMaxRates(data.Rates)
 
 	return ExchangeApiBaseResponse{
 		Base: baseCurrency,

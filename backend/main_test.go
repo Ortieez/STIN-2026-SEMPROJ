@@ -184,22 +184,39 @@ func TestAverageEndpoint(t *testing.T) {
 		AverageFunc: func(base, selected, from, to string) api.ExchangeApiTimeSeriesResponse {
 			return api.ExchangeApiTimeSeriesResponse{
 				Rates: map[string]map[string]float64{
-					"2024-01-01": {"USD": 1.0},
+					"2024-01-01": {"USD": 1.0, "CZK": 20.0},
+					"2024-01-02": {"USD": 2.0}, // Missing CZK here
 				},
 			}
 		},
 	}
 	store := storage.NewStorage()
-	store.SaveSettings(storage.UserSettings{BaseCurrency: "EUR", SelectedCurrencies: []string{"USD"}})
+	store.SaveSettings(storage.UserSettings{BaseCurrency: "EUR", SelectedCurrencies: []string{"USD", "CZK"}})
 	router := setupRouter(mockApi, store)
 
-	// Valid request
+	// Valid request verifying arithmetic mean with missing data
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/average?base=EUR&forCurrencies=USD&from=2024-01-01&to=2024-01-02", nil)
+	req := httptest.NewRequest("GET", "/average?base=EUR&forCurrencies=USD,CZK&from=2024-01-01&to=2024-01-02", nil)
 	req.Header.Set("Authorization", validToken)
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
+	}
+
+	var respBody struct {
+		Data struct {
+			Rates map[string]float64 `json:"rates"`
+		} `json:"data"`
+	}
+	json.Unmarshal(w.Body.Bytes(), &respBody)
+
+	// USD average: (1.0 + 2.0) / 2 = 1.5
+	if respBody.Data.Rates["USD"] != 1.5 {
+		t.Errorf("Expected USD average 1.5, got %f", respBody.Data.Rates["USD"])
+	}
+	// CZK average: (20.0) / 1 = 20.0 (The missing date should be ignored)
+	if respBody.Data.Rates["CZK"] != 20.0 {
+		t.Errorf("Expected CZK average 20.0, got %f", respBody.Data.Rates["CZK"])
 	}
 
 	// Invalid dates
