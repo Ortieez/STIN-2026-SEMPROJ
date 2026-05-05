@@ -1,5 +1,5 @@
 # Build stage
-FROM node:24-alpine AS build
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -9,21 +9,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# Production stage
-FROM nginx:alpine
+EXPOSE 3001
 
-# Copy custom nginx config
-RUN echo 'server { \
-    listen 3000; \
-    location / { \
-        root /usr/share/nginx/html; \
-        index index.html index.htm; \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-COPY --from=build /app/dist /usr/share/nginx/html
-
-EXPOSE 3000
-
-CMD ["nginx", "-g", "daemon off;"]
+# Run Vite preview on port 3001
+CMD ["npm", "run", "preview", "--", "--port", "3001", "--host", "0.0.0.0"]
