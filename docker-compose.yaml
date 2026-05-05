@@ -1,12 +1,13 @@
 services:
   backend:
     build:
-      context: /root/stin/backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: stin_backend
     restart: unless-stopped
     env_file:
-      - /root/stin/backend/.env
+      - path: ./backend/.env
+        required: false
     volumes:
       - /root/stin/backend:/app
     ports:
@@ -14,12 +15,13 @@ services:
  
   frontend:
     build:
-      context: /root/stin/frontend
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: stin_frontend
     restart: unless-stopped
     env_file:
-      - /root/stin/frontend/.env
+      - path: ./frontend/.env
+        required: false
     volumes:
       - /root/stin/frontend:/app
       - /app/node_modules
@@ -27,4 +29,3 @@ services:
       - "3000:3000"
     depends_on:
       - backend
- 
