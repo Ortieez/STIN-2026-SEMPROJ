@@ -21,7 +21,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=https://api-stin.ortieez.com
+        - VITE_API_URL=http://localhost:8080/
     ports:
       - "3001:3001"
     env_file:
