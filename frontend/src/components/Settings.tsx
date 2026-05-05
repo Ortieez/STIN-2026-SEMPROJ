@@ -28,7 +28,7 @@ const Settings: React.FC<SettingsProps> = ({ token, onBack }) => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   /* @ts-ignore */
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://api-stin.ortieez.com';
 
   useEffect(() => {
     fetchSettings();

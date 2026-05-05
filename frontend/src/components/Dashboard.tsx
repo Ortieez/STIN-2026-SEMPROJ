@@ -32,7 +32,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [avgError, setAvgError] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<{ baseCurrency: string, selectedCurrencies: string[] } | null>(null);
   /* @ts-ignore */
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || 'https://api-stin.ortieez.com';
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
