@@ -13,15 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type name interface {
-}
-
 func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
 
-	// CORS middleware
 	router.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -36,10 +32,8 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		c.Next()
 	})
 
-	// Public endpoints
 	router.POST("/login", auth.LoginHandler)
 
-	// Protected group (No Cache - for Settings)
 	protectedNoCache := router.Group("/")
 	protectedNoCache.Use(auth.Middleware())
 
@@ -65,7 +59,6 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		c.JSON(200, gin.H{"message": i18n.T(c, "settings_saved")})
 	})
 
-	// Protected group (With Cache - for Data)
 	protectedCached := router.Group("/")
 	protectedCached.Use(auth.Middleware())
 	protectedCached.Use(cache.Middleware(10 * time.Minute))
@@ -82,7 +75,6 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 
 		latestExchanges := exchangeApi.GetLatestExchangeNumbers(base)
 
-		// Filter by selected currencies
 		if len(settings.SelectedCurrencies) > 0 {
 			filteredRates := make(map[string]float64)
 			for _, curr := range settings.SelectedCurrencies {
@@ -107,8 +99,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		}
 
 		data := exchangeApi.GetLatestExchangeNumbers(base)
-		
-		// Filter first if currencies are selected
+
 		ratesToCompare := data.Rates
 		if len(settings.SelectedCurrencies) > 0 {
 			filtered := make(map[string]float64)
@@ -120,7 +111,6 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 			ratesToCompare = filtered
 		}
 
-		// Find strongest among filtered
 		strongestKey := ""
 		var strongestVal float64
 		first := true
@@ -133,8 +123,8 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		}
 
 		res := api.ExchangeApiBaseResponse{
-			Base: base,
-			Date: data.Date,
+			Base:  base,
+			Date:  data.Date,
 			Rates: map[string]float64{strongestKey: strongestVal},
 		}
 
@@ -152,8 +142,7 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		}
 
 		data := exchangeApi.GetLatestExchangeNumbers(base)
-		
-		// Filter first if currencies are selected
+
 		ratesToCompare := data.Rates
 		if len(settings.SelectedCurrencies) > 0 {
 			filtered := make(map[string]float64)
@@ -165,7 +154,6 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 			ratesToCompare = filtered
 		}
 
-		// Find weakest among filtered
 		weakestKey := ""
 		var weakestVal float64
 		for k, v := range ratesToCompare {
@@ -176,8 +164,8 @@ func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engin
 		}
 
 		res := api.ExchangeApiBaseResponse{
-			Base: base,
-			Date: data.Date,
+			Base:  base,
+			Date:  data.Date,
 			Rates: map[string]float64{weakestKey: weakestVal},
 		}
 

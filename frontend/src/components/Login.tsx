@@ -18,6 +18,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +29,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const hashedUsername = CryptoJS.SHA256(username).toString();
       const hashedPassword = CryptoJS.SHA256(password).toString();
 
-      const response = await fetch('http://localhost:3000/login', {
+      const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

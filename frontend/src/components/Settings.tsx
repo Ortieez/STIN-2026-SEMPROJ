@@ -27,6 +27,7 @@ const Settings: React.FC<SettingsProps> = ({ token, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     fetchSettings();
@@ -34,7 +35,7 @@ const Settings: React.FC<SettingsProps> = ({ token, onBack }) => {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('http://localhost:3000/settings', {
+      const response = await fetch(`${API_URL}/settings`, {
         headers: { 
           Authorization: token,
           'Accept-Language': language
@@ -55,7 +56,7 @@ const Settings: React.FC<SettingsProps> = ({ token, onBack }) => {
     setMessage(null);
     setSaving(true);
     try {
-      const response = await fetch('http://localhost:3000/settings', {
+      const response = await fetch(`${API_URL}/settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
