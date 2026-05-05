@@ -251,5 +251,6 @@ func main() {
 	store := storage.NewStorage()
 	exchangeApi := api.NewExchangeApiClient(store)
 	router := setupRouter(exchangeApi, store)
-	router.Run("0.0.0.0:3000")
+	router.Run("0.0.0.0:8080")
+	fmt.Println("Server running on http://localhost:8080")
 }
