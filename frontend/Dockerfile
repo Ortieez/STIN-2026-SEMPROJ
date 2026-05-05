@@ -1,18 +1,29 @@
-FROM node:20-alpine AS builder
+# Build stage
+FROM node:18-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package*.json ./
+RUN npm install
 
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+# Production stage
+FROM nginx:alpine
 
-WORKDIR /app
-COPY --from=builder /app ./
+# Copy custom nginx config
+RUN echo 'server { \
+    listen 3000; \
+    location / { \
+        root /usr/share/nginx/html; \
+        index index.html index.htm; \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
+
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 3000
 
-CMD ["npm", "run", "preview"]
+CMD ["nginx", "-g", "daemon off;"]

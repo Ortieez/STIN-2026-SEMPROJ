@@ -3,21 +3,20 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: stin_backend
-    restart: unless-stopped
     ports:
       - "8080:8080"
+    env_file:
+      - ./backend/.env
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: stin_frontend
-    restart: unless-stopped
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     ports:
-      - "3001:3000"
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
     depends_on:
       - backend
+    restart: unless-stopped
