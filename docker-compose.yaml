@@ -8,8 +8,6 @@ services:
     env_file:
       - path: ./backend/.env
         required: false
-    volumes:
-      - /root/stin/backend:/app
     ports:
       - "8080:8080"
  
@@ -29,3 +27,4 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+ 
