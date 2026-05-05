@@ -8,6 +8,12 @@ services:
     env_file:
       - path: ./backend/.env
         required: false
+    environment:
+      - CACHE_FILE_PATH=/data/cache.json
+      - USER_SETTINGS_PATH=/data/settings.json
+      - LOG_FILE_PATH=/data/app.log
+    volumes:
+      - backend_data:/data
     restart: unless-stopped
 
   frontend:
@@ -22,3 +28,6 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+volumes:
+  backend_data:
