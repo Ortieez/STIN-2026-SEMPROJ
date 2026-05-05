@@ -30,6 +30,8 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [avgLoading, setAvgLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [avgError, setAvgError] = useState<string | null>(null);
+  const [userSettings, setUserSettings] = useState<{ baseCurrency: string, selectedCurrencies: string[] } | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
@@ -50,10 +52,24 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
         return res.json();
       };
 
+      // Fetch settings first
+      const settings = await fetchWithAuth(`${API_URL}/settings`);
+      setUserSettings(settings);
+
+      // Construct query parameters
+      const params = new URLSearchParams();
+      if (settings.baseCurrency) {
+        params.append('base', settings.baseCurrency);
+      }
+      if (settings.selectedCurrencies && settings.selectedCurrencies.length > 0) {
+        params.append('symbols', settings.selectedCurrencies.join(','));
+      }
+      const queryString = params.toString() ? `?${params.toString()}` : '';
+
       const [latest, strong, weak] = await Promise.all([
-        fetchWithAuth('http://localhost:3000/latest'),
-        fetchWithAuth('http://localhost:3000/strongest'),
-        fetchWithAuth('http://localhost:3000/weakest')
+        fetchWithAuth(`${API_URL}/latest${queryString}`),
+        fetchWithAuth(`${API_URL}/strongest${queryString}`),
+        fetchWithAuth(`${API_URL}/weakest${queryString}`)
       ]);
 
       setLatestData(latest);
@@ -67,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, language, onLogout, t]);
+  }, [token, language, onLogout, t, API_URL]);
 
   useEffect(() => {
     if (view === 'dashboard') {
@@ -87,7 +103,20 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
 
     setAvgLoading(true);
     try {
-      const response = await fetch(`http://localhost:3000/average?from=${fromDate}&to=${toDate}`, {
+      const params = new URLSearchParams();
+      params.append('from', fromDate);
+      params.append('to', toDate);
+      
+      if (userSettings) {
+        if (userSettings.baseCurrency) {
+          params.append('base', userSettings.baseCurrency);
+        }
+        if (userSettings.selectedCurrencies && userSettings.selectedCurrencies.length > 0) {
+          params.append('symbols', userSettings.selectedCurrencies.join(','));
+        }
+      }
+
+      const response = await fetch(`${API_URL}/average?${params.toString()}`, {
         headers: { 
           'Authorization': token,
           'Accept-Language': language
