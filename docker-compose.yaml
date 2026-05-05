@@ -5,26 +5,18 @@ services:
       dockerfile: Dockerfile
     container_name: stin_backend
     restart: unless-stopped
-    env_file:
-      - path: ./backend/.env
-        required: false
     ports:
       - "8080:8080"
- 
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: stin_frontend
     restart: unless-stopped
-    env_file:
-      - path: ./frontend/.env
-        required: false
     volumes:
-      - /root/stin/frontend:/app
-      - /app/node_modules
+      - ./frontend:/app
     ports:
       - "3001:3000"
     depends_on:
       - backend
- 
