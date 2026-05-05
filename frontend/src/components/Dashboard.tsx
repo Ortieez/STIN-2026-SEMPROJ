@@ -31,6 +31,7 @@ const Dashboard: React.FC<DashboardProps> = ({ token, onLogout }) => {
   const [error, setError] = useState<string | null>(null);
   const [avgError, setAvgError] = useState<string | null>(null);
   const [userSettings, setUserSettings] = useState<{ baseCurrency: string, selectedCurrencies: string[] } | null>(null);
+  /* @ts-ignore */
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const fetchDashboardData = useCallback(async () => {

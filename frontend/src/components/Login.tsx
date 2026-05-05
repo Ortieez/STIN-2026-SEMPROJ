@@ -18,6 +18,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  /* @ts-ignore */
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const handleSubmit = async (e: React.FormEvent) => {
