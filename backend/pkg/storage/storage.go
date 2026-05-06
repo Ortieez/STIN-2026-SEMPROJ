@@ -91,6 +91,7 @@ func (s *Storage) Log(level, message string) {
 	defer f.Close()
 
 	data, _ := json.Marshal(entry)
+	fmt.Println(string(data)) // Also print to stdout for Docker logs
 	f.Write(data)
 	f.Write([]byte("\n"))
 }

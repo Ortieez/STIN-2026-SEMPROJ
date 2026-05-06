@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import en from './locales/en.json';
 import cs from './locales/cs.json';
 
-type Translations = typeof en;
 type Language = 'en' | 'cs';
 
 interface LanguageContextType {

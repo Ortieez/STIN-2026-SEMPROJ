@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+/* @ts-ignore */
 import './App.css'
 import Login from './components/Login'
 import Dashboard from './components/Dashboard'

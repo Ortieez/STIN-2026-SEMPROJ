@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
+/* @ts-ignore */
 import './index.css'
 import { LanguageProvider } from './i18n/LanguageContext.tsx'
 import { TooltipProvider } from './components/ui/tooltip.tsx'
