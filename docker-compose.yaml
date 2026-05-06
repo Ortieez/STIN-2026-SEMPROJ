@@ -1,13 +1,10 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     ports:
       - "8080:8080"
-    env_file:
-      - path: ./backend/.env
-        required: false
     environment:
       - CACHE_FILE_PATH=/data/cache.json
       - USER_SETTINGS_PATH=/data/settings.json
@@ -18,15 +15,10 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_URL=http://localhost:8080
+      context: .
+      dockerfile: ./frontend/Dockerfile
     ports:
       - "3001:3001"
-    env_file:
-      - path: ./frontend/.env
-        required: false
     depends_on:
       - backend
     restart: unless-stopped

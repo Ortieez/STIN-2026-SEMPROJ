@@ -3,8 +3,8 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-ARG VITE_API_URL
-ENV VITE_API_URL=$VITE_API_URL
+# Copy .env from root context (context is root in docker-compose)
+COPY .env ./.env
 
 COPY package*.json ./
 RUN npm install

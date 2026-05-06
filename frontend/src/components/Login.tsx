@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   /* @ts-ignore */
-  const API_URL = import.meta.env.VITE_API_URL || 'https://api-stin.ortieez.com';
+  const API_URL = import.meta.env.VITE_API_URL || '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
