@@ -1,0 +1,13 @@
+name: Trigger Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  trigger-backend-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Backend Build
+      run: |
+        curl -X GET ${{ secrets.BACKEND_BUILD_URL }}

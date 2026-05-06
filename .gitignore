@@ -1,0 +1,10 @@
+DSP - STIN 2026.md
+.idea/
+*.exe
+*.test
+*.out
+cache.json
+test_*.json
+.env
+*.log
+settings.json

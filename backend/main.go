@@ -1,0 +1,256 @@
+package main
+
+import (
+	"backend/pkg/api"
+	"backend/pkg/auth"
+	"backend/pkg/cache"
+	"backend/pkg/i18n"
+	"backend/pkg/storage"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func setupRouter(exchangeApi api.ExchangeApi, store *storage.Storage) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+
+	router := gin.Default()
+
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Accept-Language")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	})
+
+	// Public endpoints
+	router.POST("/login", auth.LoginHandler(store))
+
+	protectedNoCache := router.Group("/")
+	protectedNoCache.Use(auth.Middleware(store))
+
+	protectedNoCache.GET("/settings", func(c *gin.Context) {
+		settings, err := store.GetSettings()
+		if err != nil {
+			store.Log("ERROR", fmt.Sprintf("Failed to load settings: %v", err))
+			c.JSON(500, gin.H{"error": i18n.T(c, "failed_load_settings")})
+			return
+		}
+		c.JSON(200, settings)
+	})
+
+	protectedNoCache.POST("/settings", func(c *gin.Context) {
+		var settings storage.UserSettings
+		if err := c.ShouldBindJSON(&settings); err != nil {
+			store.Log("ERROR", fmt.Sprintf("Invalid settings request: %v", err))
+			c.JSON(400, gin.H{"error": i18n.T(c, "invalid_request")})
+			return
+		}
+		if err := store.SaveSettings(settings); err != nil {
+			store.Log("ERROR", fmt.Sprintf("Failed to save settings: %v", err))
+			c.JSON(500, gin.H{"error": i18n.T(c, "failed_save_settings")})
+			return
+		}
+		c.JSON(200, gin.H{"message": i18n.T(c, "settings_saved")})
+	})
+
+	protectedCached := router.Group("/")
+	protectedCached.Use(auth.Middleware(store))
+	protectedCached.Use(cache.Middleware(10 * time.Minute))
+
+	protectedCached.GET("/latest", func(c *gin.Context) {
+		settings, _ := store.GetSettings()
+		base := c.Query("base")
+		if base == "" {
+			base = settings.BaseCurrency
+		}
+		if base == "" {
+			base = "EUR"
+		}
+
+		latestExchanges := exchangeApi.GetLatestExchangeNumbers(base)
+
+		if len(settings.SelectedCurrencies) > 0 {
+			filteredRates := make(map[string]float64)
+			for _, curr := range settings.SelectedCurrencies {
+				if val, ok := latestExchanges.Rates[curr]; ok {
+					filteredRates[curr] = val
+				}
+			}
+			latestExchanges.Rates = filteredRates
+		}
+
+		c.JSON(200, gin.H{"data": latestExchanges})
+	})
+
+	protectedCached.GET("/strongest", func(c *gin.Context) {
+		settings, _ := store.GetSettings()
+		base := c.Query("base")
+		if base == "" {
+			base = settings.BaseCurrency
+		}
+		if base == "" {
+			base = "EUR"
+		}
+
+		data := exchangeApi.GetLatestExchangeNumbers(base)
+
+		ratesToCompare := data.Rates
+		if len(settings.SelectedCurrencies) > 0 {
+			filtered := make(map[string]float64)
+			for _, curr := range settings.SelectedCurrencies {
+				if val, ok := data.Rates[curr]; ok {
+					filtered[curr] = val
+				}
+			}
+			ratesToCompare = filtered
+		}
+
+		// Find strongest among filtered (Highest nominal value)
+		strongestKey := ""
+		var strongestVal float64
+		first := true
+		for k, v := range ratesToCompare {
+			if first || v > strongestVal {
+				strongestVal = v
+				strongestKey = k
+				first = false
+			}
+		}
+
+		res := api.ExchangeApiBaseResponse{
+			Base:  base,
+			Date:  data.Date,
+			Rates: map[string]float64{strongestKey: strongestVal},
+		}
+
+		c.JSON(200, gin.H{"data": res})
+	})
+
+	protectedCached.GET("/weakest", func(c *gin.Context) {
+		settings, _ := store.GetSettings()
+		base := c.Query("base")
+		if base == "" {
+			base = settings.BaseCurrency
+		}
+		if base == "" {
+			base = "EUR"
+		}
+
+		data := exchangeApi.GetLatestExchangeNumbers(base)
+
+		ratesToCompare := data.Rates
+		if len(settings.SelectedCurrencies) > 0 {
+			filtered := make(map[string]float64)
+			for _, curr := range settings.SelectedCurrencies {
+				if val, ok := data.Rates[curr]; ok {
+					filtered[curr] = val
+				}
+			}
+			ratesToCompare = filtered
+		}
+
+		// Find weakest among filtered (Lowest nominal value)
+		weakestKey := ""
+		var weakestVal float64
+		first := true
+		for k, v := range ratesToCompare {
+			if first || v < weakestVal {
+				weakestVal = v
+				weakestKey = k
+				first = false
+			}
+		}
+
+		res := api.ExchangeApiBaseResponse{
+			Base:  base,
+			Date:  data.Date,
+			Rates: map[string]float64{weakestKey: weakestVal},
+		}
+
+		c.JSON(200, gin.H{"data": res})
+	})
+
+	protectedCached.GET("/average", func(c *gin.Context) {
+		base := c.Query("base")
+		selectedCurrencies := c.Query("forCurrencies")
+		from := c.Query("from")
+		to := c.Query("to")
+
+		settings, _ := store.GetSettings()
+		if base == "" {
+			base = settings.BaseCurrency
+		}
+		if base == "" {
+			base = "EUR"
+		}
+
+		if selectedCurrencies == "" {
+			selectedCurrencies = strings.Join(settings.SelectedCurrencies, ",")
+		}
+
+		if selectedCurrencies == "" {
+			store.Log("ERROR", "Average calculation failed: no currencies selected")
+			c.JSON(400, gin.H{"error": i18n.T(c, "no_selected_currencies")})
+			return
+		}
+
+		selectedCurrenciesArr := strings.Split(selectedCurrencies, ",")
+		_, errFrom := time.Parse("2006-01-02", from)
+		_, errTo := time.Parse("2006-01-02", to)
+
+		if errFrom != nil || errTo != nil {
+			store.Log("ERROR", fmt.Sprintf("Average calculation failed: invalid date format (from: %s, to: %s)", from, to))
+			c.JSON(400, gin.H{"error": i18n.T(c, "date_format_error")})
+			return
+		}
+
+		data := exchangeApi.GetAverageExchangeRateForCurrencies(base, selectedCurrencies, from, to)
+		averageCurrencies := make(map[string]float64)
+		currencyCounts := make(map[string]float64)
+
+		if len(data.Rates) > 0 {
+			for _, innerMap := range data.Rates {
+				for _, currency := range selectedCurrenciesArr {
+					if val, ok := innerMap[currency]; ok {
+						averageCurrencies[currency] += val
+						currencyCounts[currency]++
+					}
+				}
+			}
+			for _, currency := range selectedCurrenciesArr {
+				if count, ok := currencyCounts[currency]; ok && count > 0 {
+					averageCurrencies[currency] /= count
+				} else {
+					delete(averageCurrencies, currency)
+				}
+			}
+		}
+
+		res := &api.ExchangeApiBaseResponse{
+			Base:  base,
+			Date:  fmt.Sprintf("%s..%s", from, to),
+			Rates: averageCurrencies,
+		}
+		c.JSON(200, gin.H{"data": res})
+	})
+
+	return router
+}
+
+func main() {
+	store := storage.NewStorage()
+	exchangeApi := api.NewExchangeApiClient(store)
+	router := setupRouter(exchangeApi, store)
+	router.Run("0.0.0.0:8080")
+	fmt.Println("Server running on http://localhost:8080")
+}

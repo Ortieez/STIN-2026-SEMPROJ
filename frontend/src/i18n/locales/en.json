@@ -1,0 +1,60 @@
+{
+  "login": {
+    "title": "Login",
+    "description": "Enter your credentials to access the dashboard",
+    "username": "Username",
+    "password": "Password",
+    "button": "Login",
+    "logging_in": "Logging in...",
+    "error_connection": "Failed to connect to server"
+  },
+  "dashboard": {
+    "title": "Currency Dashboard",
+    "subtitle": "Real-time exchange rates and analytics",
+    "refresh": "Refresh",
+    "settings": "Settings",
+    "logout": "Logout",
+    "fetching": "Fetching latest markets...",
+    "error_connection": "Could not connect to the currency server. Please try again later.",
+    "strongest": "Strongest Currency",
+    "weakest": "Weakest Currency",
+    "relative_to": "Relative to",
+    "tabs": {
+      "rates": "Market Rates",
+      "average": "Historical Avg"
+    },
+    "latest": {
+      "title": "Latest Exchange Rates",
+      "description": "Current market values for your tracked currencies (Base: {{base}})",
+      "col_currency": "Currency",
+      "col_rate": "Exchange Rate",
+      "empty": "No tracked currencies. Update them in Settings."
+    },
+    "avg_calc": {
+      "title": "Average Rates Calculator",
+      "description": "Analyze currency performance over a specific period",
+      "from": "Start Date",
+      "to": "End Date",
+      "calculate": "Calculate",
+      "no_currencies_tooltip": "Add tracked currencies in Settings to use the calculator",
+      "no_currencies_error": "Please select at least one currency in Settings to calculate averages.",
+      "results_for": "Results for"
+    }
+  },
+  "settings": {
+    "title": "User Settings",
+    "description": "Configure your base currency and tracked currency list",
+    "base_currency": "Base Currency",
+    "tracked_currencies": "Tracked Currencies",
+    "empty_currencies": "No currencies selected",
+    "add_placeholder": "Add currency (e.g. USD)",
+    "add": "Add",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "back": "Back to Dashboard",
+    "success": "Settings saved successfully!",
+    "error": "Failed to save settings",
+    "error_connection": "Error connecting to server"
+  }
+}
