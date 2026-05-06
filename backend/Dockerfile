@@ -3,16 +3,16 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-# Copy go mod and sum files
-COPY go.mod go.sum ./
+# Copy go mod and sum files from backend directory
+COPY backend/go.mod backend/go.sum ./
 
 # Download all dependencies
 RUN go mod download
 
-# Copy the source
-COPY . .
+# Copy the backend source
+COPY backend/ .
 
-# Copy .env from root context (context is root in docker-compose)
+# Copy .env from root context
 COPY .env ./.env
 
 # Build the Go app

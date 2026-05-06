@@ -1,15 +1,19 @@
 # Build stage
-FROM node:24-alpine
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
-# Copy .env from root context (context is root in docker-compose)
+# Copy .env from root context
 COPY .env ./.env
 
-COPY package*.json ./
+# Copy package files from frontend directory
+COPY frontend/package*.json ./
 RUN npm install
 
-COPY . .
+# Copy frontend source
+COPY frontend/ .
+
+# Run build
 RUN npm run build
 
 EXPOSE 3001
